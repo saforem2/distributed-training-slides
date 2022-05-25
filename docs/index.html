@@ -228,8 +228,13 @@ May, 2022 <!-- .element: style="font-family: 'Nanum Pen Script'; font-size: 1.6e
     
 - 🤗[huggingface/transformers](https://github.com/huggingface/transformers) is a useful reference, and they have an excellent series of posts in their documentation on [Model Parallelism](https://huggingface.co/docs/transformers/parallelism)
 </script></section><section  data-markdown><script type="text/template">
-<p style="line-height: 0" class="reset-paragraph image-paragraph"><img src="assets/model-parallel.svg" alt="" align="stretch"></img></p>
+<div class="reset-margin stretch-column" style="position: absolute; left: 0px; top: 0px; height: 700px; min-height: 700px; width: 960px; display: flex; flex-direction: column; align-items: center; justify-content: space-evenly" >
 
+<p style="line-height: 0" class="reset-paragraph image-paragraph"><img src="assets/model-parallel.svg" alt="" ></img></p>
+
+</div>
+
+<!-- .slide: class="drop" -->
 </script></section><section  data-markdown><script type="text/template">
 ## Data Parallelism
 - Typically easier / simpler to implement
@@ -261,8 +266,13 @@ May, 2022 <!-- .element: style="font-family: 'Nanum Pen Script'; font-size: 1.6e
 - In the data-parallel approach, all workers own a replica of the model. The global batch of data is split into multiple minibatches, and processed by different workers.
 </script></section><section  data-markdown><script type="text/template">
 
+<div class="reset-margin stretch-column" style="position: absolute; left: 0px; top: 0px; height: 700px; min-height: 700px; width: 960px; display: flex; flex-direction: column; align-items: center; justify-content: space-evenly" >
+
 <p style="line-height: 0" class="reset-paragraph image-paragraph"><img src="assets/data-parallel.svg" alt="" align="stretch"></img></p>
 
+</div>
+
+<!-- .slide: class="drop" -->
 </script></section><section  data-markdown><script type="text/template">
 ## Data Parallelism
 
@@ -275,11 +285,111 @@ May, 2022 <!-- .element: style="font-family: 'Nanum Pen Script'; font-size: 1.6e
 </ol>
 </div>
 </script></section><section  data-markdown><script type="text/template">    
-    
+<div class="reset-margin stretch-column" style="position: absolute; left: 0px; top: 0px; height: 700px; min-height: 700px; width: 960px; display: flex; flex-direction: column; align-items: center; justify-content: space-evenly" >
+
 <p style="line-height: 0" class="reset-paragraph image-paragraph"><img src="assets/avgGrads.svg" alt="" ></img></p>
 
-    
+</div>
 
+<!-- .slide: class="drop" -->
+</script></section><section  data-markdown><script type="text/template">## Best Practices
+
+<div class="block">
+
+<!-- .element: style="text-align: left" -->
+
+<div class="callout callout-color5">
+<div class="callout-title">
+<div class="callout-icon">
+
+<i class="fas fa-exclamation-triangle" ></i>
+
+</div>
+<div class="callout-title-inner">
+
+Warning!
+
+</div>
+</div>
+<div class="callout-content">
+
+**Computation stalls during communication!**
+
+Keeping the communication to computation ratio small is important for effective scaling
+
+</div>
+</div>
+
+</div>
+
+
+</script></section><section  data-markdown><script type="text/template">
+## Best Practices
+
+<div class="block">
+
+<!-- .element: style="font-size: 0.9em" -->
+
+- Good practices for upcoming systems (e.g. [Aurora](https://alcf.anl.gov/aurora), [Polaris](https://alcf.anl.gov/polaris), etc.)<sup id="fnref:6" role="doc-noteref">1</sup>
+1. Use parallel IO whenever possible
+    1. Could feed each rank from different files
+    2. Use MPI IO to have each rank read its own batch from a file
+    3. Use several ranks to read data and MPI to scatter data to remaining ranks
+        1. This is most practical in big, at-scale trainings
+2. Take advantage of the data storage
+    1. Use [striping on Lustre](https://wiki.lustre.org/Configuring_Lustre_File_Striping)
+    2. Use the right optimizations for Aurora, Polaris, etc.
+3. Preload data when possible
+    1. Offloading to a GPU frees CPU cycles for loading the next batch of data
+        1. You can minimize IO latency this way
+2. References:<sup id="fnref:tds" role="doc-noteref">2</sup>,<sup id="fnref:nvd" role="doc-noteref">3</sup>
+
+</div>
+
+
+        
+<div class="footnotes" role="doc-endnotes">
+<ol>
+</ol>
+</div>
+</script></section><section  data-markdown><script type="text/template">
+### Comparison
+
+- We can get a better understanding of the differences by looking at how both the data and model weights are distributed across the different workers as shown below.
+
+- **Data Parallel**: Each worker receives
+
+    - **complete** model with all of its weights
+    
+    - **subset** of data
+    
+- **Model Parallel**: Each worker receives
+
+    - **complete** data set
+    
+    - **subset** of model weights
+    
+</script></section><section  data-markdown><script type="text/template">
+<div class="reset-margin stretch-column" style="position: absolute; left: 0px; top: 0px; height: 700px; min-height: 700px; width: 960px; display: flex; flex-direction: column; align-items: center; justify-content: space-evenly" >
+
+<p style="line-height: 0" class="reset-paragraph image-paragraph"><img src="assets/ParallelismSplits.svg" alt="" ></img></p>
+
+</div>
+
+<!-- .slide: class="drop" -->
+</script></section><section  data-markdown><script type="text/template">
+## Comparison
+- In the **data parallel** approach, each worker receives the **complete** model with all of its weights, but only receives a **subset** of the data.
+
+- In the **model parallel** approach, each worker receives the **complete** data, but only receives a **subset** of the model weights. This can be useful when a model is too large to fit onto a single device (CPU / GPU).
+
+- The [Switch Transformer](https://arxiv.org/abs/2101.03961) has a clear discussion of hybrid (data + model)-parallel training as well as general advice on scaling large models.
+</script></section><section  data-markdown><script type="text/template">
+<img src="assets/ParallelismSplits.svg" width="66%" style="padding-right:10%;" ></img>
+
+</script></section><section  data-markdown><script type="text/template">
+<img src="assets/data-parallel.svg" width="30%"> <img src="assets/model-parallel.svg" width="36%" style="margin-left:50px;" ></img>
+</script></section><section  data-markdown><script type="text/template"><!--<img src="assets/scale_results_small.svg" width="100%">-->
 
 </script></section><section  data-markdown><script type="text/template"><style>
 :root {
