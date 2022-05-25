@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+
+    <title>Scaling Deep Learning Applications</title>
+    <link rel="stylesheet" href="dist/reveal.css" />
+    <link rel="stylesheet" href="dist/theme/black.css" id="theme" />
+    <link rel="stylesheet" href="plugin/highlight/monokai.css" />
+	<link rel="stylesheet" href="css/layout.css" />
+	<link rel="stylesheet" href="plugin/customcontrols/style.css">
+	<link rel="stylesheet" href="plugin/chalkboard/style.css">
+
+    <link rel="stylesheet" href="./css/custom.css" />
+
+    <script defer src="dist/fontawesome/all.min.js"></script>
+
+	<script type="text/javascript">
+		var forgetPop = true;
+		function onPopState(event) {
+			if(forgetPop){
+				forgetPop = false;
+			} else {
+				parent.postMessage(event.target.location.href, "app://obsidian.md");
+			}
+        }
+		window.onpopstate = onPopState;
+		window.onmessage = event => {
+			if(event.data == "reload"){
+				window.document.location.reload();
+			}
+			forgetPop = true;
+		}
+
+		function fitElements(){
+			const itemsToFit = document.getElementsByClassName('fitText');
+			for (const item in itemsToFit) {
+				if (Object.hasOwnProperty.call(itemsToFit, item)) {
+					var element = itemsToFit[item];
+					fitElement(element,1, 1000);
+					element.classList.remove('fitText');
+				}
+			}
+		}
+
+		function fitElement(element, start, end){
+
+			let size = (end + start) / 2;
+			element.style.fontSize = `${size}px`;
+
+			if(Math.abs(start - end) < 1){
+				while(element.scrollHeight > element.offsetHeight){
+					size--;
+					element.style.fontSize = `${size}px`;
+				}
+				return;
+			}
+
+			if(element.scrollHeight > element.offsetHeight){
+				fitElement(element, start, size);
+			} else {
+				fitElement(element, size, end);
+			}		
+		}
+
+
+		document.onreadystatechange = () => {
+			fitElements();
+			if (document.readyState === 'complete') {
+				if (window.location.href.indexOf("?export") != -1){
+					parent.postMessage(event.target.location.href, "app://obsidian.md");
+				}
+				if (window.location.href.indexOf("print-pdf") != -1){
+					let stateCheck = setInterval(() => {
+						clearInterval(stateCheck);
+						window.print();
+					}, 250);
+				}
+			}
+	};
+
+
+        </script>
+  </head>
+  <body>
+    <div class="reveal">
+      <div class="slides"><section  data-markdown><script type="text/template">
+
+<div class="reset-margin" style="font-family: 'Inter',sans-serif; background-color: #303030; border-radius: 8px!important; padding: auto; align: center; position: absolute; left: 48px; top: 140px; height: 175px; min-height: 175px; width: 864px; display: flex; flex-direction: column; align-items: center; justify-content: space-evenly" >
+
+#### Scaling Deep Learning Applications <!-- .element: style="font-family: 'Inter'; color: #F8F8F8" align="stretch" -->
+    
+<i class="fab fa-github"></i> [`CompPerfWorkshop/05_scaling-DL`](https://github.com/argonne-lcf/CompPerfWorkshop/tree/main/05_scaling-DL)
+</div>
+
+<div class="reset-margin" style="line-height: 0.6em; position: absolute; left: 0px; top: 385px; height: 210px; min-height: 210px; width: 960px; display: flex; flex-direction: column; align-items: center; justify-content: flex-start" >
+
+Sam Foreman <!-- .element: style="font-family: 'Inter'; font-size: 1.2em; font-weight: 500; line-height: 0.6; color: #E0E0E0!important; vertical-align: bottom!important" -->
+
+May, 2022 <!-- .element: style="font-family: 'Nanum Pen Script'; font-size: 1.6em; color: #616161; vertical-align: top; font-weight: 400" -->
+</div>
+
+<div class="reset-margin flex-even" style="font-size: 1.5em; position: absolute; left: 0px; top: 630px; height: 70px; min-height: 70px; width: 960px; display: flex; flex-direction: row; align-items: center; justify-content: space-evenly" align="left">
+
+
+<div class="block">
+
+<!-- .element: style="margin-left: 2%; margin-bottom: 2%" -->
+
+[<i class="fab fa-github"></i>](https://github.com/argonne-lcf/CompPerfWorkshop)
+[<i class="fas fa-home"></i>](https://samforeman.me)
+[<i class="fab fa-twitter"></i>](https://twitter.com/saforem2)
+
+</div>
+
+
+
+</div>
+
+<div class="reset-margin" style="position: absolute; left: 672px; top: 490px; height: 210px; min-height: 210px; width: 288px; display: flex; flex-direction: column; align-items: flex-end; justify-content: flex-end" align="right">
+
+<img src="https://raw.githubusercontent.com/saforem2/anl-job-talk/main/docs/assets/anl.svg" width="100%" align="center" ></img>
+</div>
+
+<!-- .slide: class="drop" -->
+</script></section><section  data-markdown><script type="text/template">
+<div class="block">
+
+<!-- .element: style="max-width: 75%; padding: 1%" class="note" -->
+
+# Distributed Training
+
+</div>
+
+
+</script></section><section  data-markdown><script type="text/template">## Why train on multiple GPUs?
+- Large batches may not fit in GPU memory
+- Splitting the data across workers has the effect of increasing the batch size
+- Smooth loss landscape
+- Improved gradient estimators
+- Less iterations for same number of epochs
+    - May need to train for more epochs if another change is not made
+    - e.g. boosting the learning rate
+- See [Large Batch Training of Convolutional Networks](https://arxiv.org/abs/1708.03888)See Large Batch Training of Convolutional Networks
+</script></section><section  data-markdown><script type="text/template">
+# Recent Progess
+
+<div class="block">
+
+<!-- .element: style="font-size: 0.6em" -->
+   
+|              Year               |                  Author                  |            Batch Size            |                  Processor                  |           DL Library            |                Time                |                         Accuracy |
+|:-------------------------------:|:----------------------------------------:|:--------------------------------:|:-------------------------------------------:|:-------------------------------:|:----------------------------------:| --------------------------------:|
+| <span id="blue">**2016**</span> |   <span id="blue">He et al. [1]</span>   |    <span id="blue">256</span>    |    <span id="blue">Tesla P100 x8</span>     |  <span id="blue">Caffe</span>   |              <span id="blue">29 Hrs</span>               |                            <span id="blue">75.3%</span> |
+|                                 |             Goyal et al. [2]             |               8192               |                 Tesla P100                  |             Caffe 2             |               1 hour               |                            76.3% |
+|                                 |             Smith et al. [3]             |         8192 ->  16,384          |                full TPU pod                 |           TensorFlow            |              30 mins               |                            76.1% |
+|                                 |             Akiba et al. [4]             |              32,768              |              Tesla P100 x1024               |             Chainer             |              15 mins               |                            74.9% |
+|                                 |              Jia et al. [5]              |              65,536              |              Tesla P40  x2048               |           TensorFLow            |              6.6 mins              |                            75.8% |
+|                                 |             Ying et al. [6]              |              65,536              |                TPU v3 x1024                 |           TensorFlow            |              1.8 mins              |                            75.2% |
+|                                 |            Mikami et al. [7]             |              55,296              |              Tesla V100 x3456               |               NNL               |              2.0 mins              |                           75.29% |
+| <span id="red">**2019**</span>  | <span id="red">**Yamazaki et al**</span> | <span id="red">**81,920**</span> | <span id="red">**Tesla V100 x 2048**</span> | <span id="red">**MXNet**</span> | <span id="red">**1.2 mins**</span> | <span id="red">**75.08%**</span> |
+
+</div>
+
+
+</script></section><section  data-markdown><script type="text/template">
+# Distributed Training
+- For additional information / general guidance, refer to [Writing Distributed Applications with PyTorch](https://pytorch.org/tutorials/intermediate/dist_tuto.html), or see [`[1]`](https://eng.uber.com/horovod/), [`[2]`](https://www.slideshare.net/AlexanderSergeev4/horovod-distributed-tensorflow-made-easy), [`[3]`](https://www.arxiv.org/abs/1802.05799)
+
+<div class="footnote reset-margin" style="color: #757575; font-size: 0.8em; position: absolute; left: 0px; top: 420px; height: 280px; min-height: 280px; width: 960px; display: flex; flex-direction: column; align-items: center; justify-content: space-evenly" >
+
+1. Sergeev, A., Del Balso, M. (2017) [Meet Horovod: Uber’s Open Source Distributed Deep Learning Framework for TensorFlow](https://eng.uber.com/horovod/)
+2. Sergeev, A. (2017) [Horovod - Distributed TensorFlow Made Easy](https://www.slideshare.net/AlexanderSergeev4/horovod-distributed-tensorflow-made-easy).
+3. Sergeev, A., Del Balso, M. (2018) Horovod: fast and easy distributed deep learning in TensorFlow [arXiv:1802.05799](https://www.arxiv.org/abs/1802.05799).
+</div>
+
+<!-- .slide: class="drop" -->
+</script></section><section  data-markdown><script type="text/template">
+# Development Trajectory 
+
+<div class="block">
+
+<!-- .element: style="font-size: 0.7em" align="center" -->
+
+1. ❌ <span style="color:#757575;">Use single device training if the data and model can fit on one GPU, and training speed is not a concern  (not relevant for this section)</span>
+
+2. ❌ <span style="color:#757575;">Use single-machine multi-GPU <a href="https://pytorch.org/docs/stable/generated/torch.nn.DataParallel.html"> `DataParallel` </a>  to make use of multiple GPUs on a single machine to speed up training with minimal code changes (not recommended, <tt>DDP</tt> preferred)</span>
+
+3. ✅ Use single-machine multi-GPU <a href="https://pytorch.org/docs/stable/generated/torch.nn.parallel.DistributedDataParallel.html"> <tt>DistributedDataParallel</tt>  </a>  if you would like to further speed up training and are willing to write a little more code to set it up
+
+4. ✅ Use multi-machine <a href="https://pytorch.org/docs/stable/generated/torch.nn.parallel.DistributedDataParallel.html"><tt>DistributedDataParallel</tt></a> and the <a href="https://github.com/pytorch/examples/blob/master/distributed/ddp/README.md"> launching script</a> if the application needs to scale across machine boundaries
+
+5. ❓ <span style="color:#757575;">Use <a href="https://pytorch.org/docs/stable/distributed.elastic.html"> <tt>torch.distributed.elastic</tt></a> to launch distributed training if errors (e.g., out-of-memory) are expected or if resources can join and leave dynamically during training  (not covered in this tutorial)</span>
+
+</div>
+
+
+</script></section><section  data-markdown><script type="text/template">
+
+<div class="block">
+
+<!-- .element: style="max-width: 75%; padding: 1%" class="note" -->
+
+# Model vs Data Parallelism
+
+</div>
+
+
+</script></section><section  data-markdown><script type="text/template">
+## Model Parallelism
+- Disjoint subsets of a neural network are assigned to different devices
+
+    - All communication associated with subsets are distributed
+    
+- Communication happens between devices whenever there is dataflow between two subsets
+
+- Typically **more complicated** to implement than data parallel training
+
+- Suitable when the model is too large to fit onto a single device (CPU / GPU)
+</script></section><section  data-markdown><script type="text/template">
+## Model Parallelism
+- Suitable when the model is too large to fit onto a single device (CPU / GPU)
+
+    - Partitioning the model into different subsets is not an easy task
+    
+    - Might potentially introduce load imbalancing issues limiting the scaling efficiency
+    
+- 🤗[huggingface/transformers](https://github.com/huggingface/transformers) is a useful reference, and they have an excellent series of posts in their documentation on [Model Parallelism](https://huggingface.co/docs/transformers/parallelism)
+</script></section><section  data-markdown><script type="text/template">
+<p style="line-height: 0" class="reset-paragraph image-paragraph"><img src="assets/model-parallel.svg" alt="" align="stretch"></img></p>
+
+</script></section><section  data-markdown><script type="text/template">
+## Data Parallelism
+- Typically easier / simpler to implement
+
+- Existing frameworks ([Horovod](https://horovod.readthedocs.io/en/stable/index.html), [DeepSpeed](https://github.com/microsoft/DeepSpeed), [DDP](https://pytorch.org/docs/stable/notes/ddp.html), etc.)
+
+    - Typically relatively simple to get up and running (minor modifications to existing code)
+    
+    
+- Our recent presentation on data-parallel training is available on [youtube](https://youtu.be/930yrXjNkgM) 
+</script></section><section  data-markdown><script type="text/template">
+## Data Parallelism 
+
+- All of the workers own a replica of the model
+
+- Global batch of data is **split into multiple mini-batches** and processed by **different workers**
+
+- **Each worker computes the loss + gradients** w.r.t its local data
+
+- Loss + Grads are averaged across workers before updating parameters
+
+    - Relatively simple to implement, `MPI_Allreduce` is the only communication operation required
+    
+    - [Concepts — Horovod documentation](https://horovod.readthedocs.io/en/stable/concepts_include.html)
+    </script></section><section  data-markdown><script type="text/template">
+## Data Parallelism
+
+
+- In the data-parallel approach, all workers own a replica of the model. The global batch of data is split into multiple minibatches, and processed by different workers.
+</script></section><section  data-markdown><script type="text/template">
+
+<p style="line-height: 0" class="reset-paragraph image-paragraph"><img src="assets/data-parallel.svg" alt="" align="stretch"></img></p>
+
+</script></section><section  data-markdown><script type="text/template">
+## Data Parallelism
+
+- Each worker computes the corresponding loss and gradients with respect to the local data it possesses. Before updating the parameters at each epoch, the loss and gradients are averaged among all the workers through a collective `allreduce` operation.
+
+    - `MPI` defines the function `MPI_Allreduce` to reduce values from all ranks and broadcast the result of the reduction such that all processes have a copy of it at the end of the operation.
+    
+- There are multiple different ways to implement the allreduce, and it may vary from problem to problem<sup id="fnref:4" role="doc-noteref">1</sup>,<sup id="fnref:5" role="doc-noteref">2</sup>
+    
+<p style="line-height: 0" class="reset-paragraph image-paragraph"><img src="assets/avgGrads.svg" alt="" ></img></p>
+
+    
+
+
+
+<div class="footnotes" role="doc-endnotes">
+<ol>
+</ol>
+</div>
+</script></section><section  data-markdown><script type="text/template"><style>
+:root {
+   --r-heading-font: 'Inter', sans-serif;
+  font-size: 34px;
+}
+.horizontal_dotted_line{
+  border-bottom: 2px dotted gray;
+} 
+.footer {
+  font-size: 60%;
+  vertical-align:bottom;
+  color:#bdbdbd;
+  font-weight:400;
+  margin-left:-5px;
+  margin-bottom:1%;
+}
+.note {
+  padding:auto;
+  margin: auto;
+  text-align:center!important;
+  border-radius: 8px!important;
+  background-color: rgba(53, 53, 53, 0.5);
+}
+.reveal ul ul,
+.reveal ul ol,
+.reveal ol ol,
+.reveal ol ul {
+  margin-bottom: 10px;
+}
+.callout {
+  background-color: #35353550
+  color: #eeeeee;
+}
+.callout-content {
+  overflow-x: auto;
+  color: #eeeeee;
+  background-color:#353535;
+  padding: 5px 15px;
+}
+</style></script></section></div>
+    </div>
+
+    <script src="dist/reveal.js"></script>
+
+    <script src="plugin/markdown/markdown.js"></script>
+    <script src="plugin/highlight/highlight.js"></script>
+    <script src="plugin/zoom/zoom.js"></script>
+    <script src="plugin/notes/notes.js"></script>
+    <script src="plugin/math/math.js"></script>
+	<script src="plugin/mermaid/mermaid.js"></script>
+	<script src="plugin/chart/chart.min.js"></script>
+	<script src="plugin/chart/plugin.js"></script>
+	<script src="plugin/menu/menu.js"></script>
+	<script src="plugin/customcontrols/plugin.js"></script>
+	<script src="plugin/chalkboard/plugin.js"></script>
+
+    <script>
+      function extend() {
+        var target = {};
+        for (var i = 0; i < arguments.length; i++) {
+          var source = arguments[i];
+          for (var key in source) {
+            if (source.hasOwnProperty(key)) {
+              target[key] = source[key];
+            }
+          }
+        }
+        return target;
+      }
+
+	  function isLight(color) {
+		let hex = color.replace('#', '');
+
+		// convert #fff => #ffffff
+		if(hex.length == 3){
+			hex = `${hex[0]}${hex[0]}${hex[1]}${hex[1]}${hex[2]}${hex[2]}`;
+		}
+
+		const c_r = parseInt(hex.substr(0, 2), 16);
+		const c_g = parseInt(hex.substr(2, 2), 16);
+		const c_b = parseInt(hex.substr(4, 2), 16);
+		const brightness = ((c_r * 299) + (c_g * 587) + (c_b * 114)) / 1000;
+		return brightness > 155;
+	}
+
+	var bgColor = getComputedStyle(document.documentElement).getPropertyValue('--r-background-color').trim();
+
+	if(isLight(bgColor)){
+		document.body.classList.add('has-light-background');
+	} else {
+		document.body.classList.add('has-dark-background');
+	}
+
+      // default options to init reveal.js
+      var defaultOptions = {
+        controls: true,
+        progress: true,
+        history: true,
+        center: true,
+        transition: 'default', // none/fade/slide/convex/concave/zoom
+        plugins: [
+          RevealMarkdown,
+          RevealHighlight,
+          RevealZoom,
+          RevealNotes,
+          RevealMath.MathJax3,
+		  RevealMermaid,
+		  RevealChart,
+		  RevealCustomControls,
+		  RevealMenu,
+		  RevealChalkboard, 
+        ],
+
+		mathjax3: {
+			mathjax: 'plugin/math/mathjax/tex-mml-chtml.js',
+		},
+
+		customcontrols: {
+			controls: [
+				{id: 'toggle-overview',
+				title: 'Toggle overview (O)',
+				icon: '<i class="fa fa-th"></i>',
+				action: 'Reveal.toggleOverview();'
+				},
+				{ icon: '<i class="fa fa-pen-square"></i>',
+				title: 'Toggle chalkboard (B)',
+				action: 'RevealChalkboard.toggleChalkboard();'
+				},
+				{ icon: '<i class="fa fa-pen"></i>',
+				title: 'Toggle notes canvas (C)',
+				action: 'RevealChalkboard.toggleNotesCanvas();'
+				},
+			]
+		},
+		menu: {
+			loadIcons: false
+		}
+      };
+
+      // options from URL query string
+      var queryOptions = Reveal().getQueryHash() || {};
+
+      var options = extend(defaultOptions, {"width":960,"height":700,"margin":0.04,"controls":true,"progress":true,"slideNumber":true,"center":true,"transition":"slide","transitionSpeed":"normal"}, queryOptions);
+    </script>
+
+    <script>
+      Reveal.initialize(options);
+    </script>
+  </body>
+</html>
