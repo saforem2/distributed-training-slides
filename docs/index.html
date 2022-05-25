@@ -267,21 +267,20 @@ May, 2022 <!-- .element: style="font-family: 'Nanum Pen Script'; font-size: 1.6e
 ## Data Parallelism
 
 - Each worker computes the corresponding loss and gradients with respect to the local data it possesses. Before updating the parameters at each epoch, the loss and gradients are averaged among all the workers through a collective `allreduce` operation.
-
     - `MPI` defines the function `MPI_Allreduce` to reduce values from all ranks and broadcast the result of the reduction such that all processes have a copy of it at the end of the operation.
-    
 - There are multiple different ways to implement the allreduce, and it may vary from problem to problem<sup id="fnref:4" role="doc-noteref">1</sup>,<sup id="fnref:5" role="doc-noteref">2</sup>
+
+<div class="footnotes" role="doc-endnotes">
+<ol>
+</ol>
+</div>
+</script></section><section  data-markdown><script type="text/template">    
     
 <p style="line-height: 0" class="reset-paragraph image-paragraph"><img src="assets/avgGrads.svg" alt="" ></img></p>
 
     
 
 
-
-<div class="footnotes" role="doc-endnotes">
-<ol>
-</ol>
-</div>
 </script></section><section  data-markdown><script type="text/template"><style>
 :root {
    --r-heading-font: 'Inter', sans-serif;
