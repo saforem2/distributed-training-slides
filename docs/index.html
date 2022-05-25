@@ -10,6 +10,7 @@
     <link rel="stylesheet" href="plugin/highlight/monokai.css" />
 	<link rel="stylesheet" href="css/layout.css" />
 	<link rel="stylesheet" href="plugin/customcontrols/style.css">
+	<link rel="stylesheet" href="plugin/chalkboard/style.css">
 
     <link rel="stylesheet" href="./css/custom.css" />
 
@@ -792,6 +793,7 @@ https://github.com/baidu-research/baidu-allreduce
 	<script src="plugin/chart/plugin.js"></script>
 	<script src="plugin/menu/menu.js"></script>
 	<script src="plugin/customcontrols/plugin.js"></script>
+	<script src="plugin/chalkboard/plugin.js"></script>
 
     <script>
       function extend() {
@@ -847,6 +849,7 @@ https://github.com/baidu-research/baidu-allreduce
 		  RevealChart,
 		  RevealCustomControls,
 		  RevealMenu,
+		  RevealChalkboard, 
         ],
 
 		mathjax3: {
@@ -855,6 +858,19 @@ https://github.com/baidu-research/baidu-allreduce
 
 		customcontrols: {
 			controls: [
+				{id: 'toggle-overview',
+				title: 'Toggle overview (O)',
+				icon: '<i class="fa fa-th"></i>',
+				action: 'Reveal.toggleOverview();'
+				},
+				{ icon: '<i class="fa fa-pen-square"></i>',
+				title: 'Toggle chalkboard (B)',
+				action: 'RevealChalkboard.toggleChalkboard();'
+				},
+				{ icon: '<i class="fa fa-pen"></i>',
+				title: 'Toggle notes canvas (C)',
+				action: 'RevealChalkboard.toggleNotesCanvas();'
+				},
 			]
 		},
 		menu: {
@@ -865,7 +881,7 @@ https://github.com/baidu-research/baidu-allreduce
       // options from URL query string
       var queryOptions = Reveal().getQueryHash() || {};
 
-      var options = extend(defaultOptions, {"width":960,"height":700,"margin":0.1,"controls":false,"progress":false,"slideNumber":false,"center":true,"transition":"slide","transitionSpeed":"normal","pdfMaxPagesPerSlide":1}, queryOptions);
+      var options = extend(defaultOptions, {"width":960,"height":700,"margin":0.04,"controls":true,"progress":true,"slideNumber":true,"center":true,"transition":"slide","transitionSpeed":"normal","pdfMaxPagesPerSlide":1}, queryOptions);
     </script>
 
     <script>
