@@ -600,10 +600,16 @@ def train_step(data, model, loss_fn, optimizer, first_batch, compress=True):
 ```
 </script></section><section  data-markdown><script type="text/template">
 ## Deal with Data
-At each training step, we want to ensure that each worker receives unique data.
+- At each training step, we want to ensure that each worker receives unique data.
 
-Naively, this can be done in one of two ways:
-1. From each worker, randomly select a minibatch (i.e. each worker can see the *full dataset*). 
+- Naively, this can be done in one of two ways:
+  1. From each worker, randomly select a minibatch (i.e. each worker can see the *full dataset*). 
+
+  2. Manually partition the data (ahead of time) and assign different sections to different workers (i.e. each worker can only see *their local portion* of the dataset).
+
+<div class="block">
+
+<!-- .element: style="text-align: left" -->
 
 <div class="callout callout-color5">
 <div class="callout-title">
@@ -625,8 +631,11 @@ In this case, it is important that each worker uses different seeds to ensure th
 </div>
 </div>
 
-2. Manually partition the data (ahead of time) and assign different sections to different workers (i.e. each worker can only see *their local portion* of the dataset).
-</script></section><section  data-markdown><script type="text/template">## Deal with Data
+</div>
+
+
+</script></section><section  data-markdown><script type="text/template">
+## Deal with Data
 
 ```python
 TF_FLOAT = tf.keras.backend.get_floatx()
