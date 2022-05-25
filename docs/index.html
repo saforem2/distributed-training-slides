@@ -202,7 +202,10 @@ May, 2022 <!-- .element: style="font-family: 'Nanum Pen Script'; font-size: 1.6e
 
 <!-- .element: style="max-width: 75%; padding: 1%" class="note" -->
 
-# Model vs Data Parallelism
+# <span id="blue">Model</span>  
+vs 
+# <span id="red">Data </span>
+### Parallelism
 
 </div>
 
@@ -263,7 +266,9 @@ May, 2022 <!-- .element: style="font-family: 'Nanum Pen Script'; font-size: 1.6e
 ## Data Parallelism
 
 
-- In the data-parallel approach, all workers own a replica of the model. The global batch of data is split into multiple minibatches, and processed by different workers.
+- In the data-parallel approach, all workers own a replica of the model.
+
+- The global batch of data is split into multiple minibatches, and processed by different workers.
 </script></section><section  data-markdown><script type="text/template">
 
 <div class="reset-margin stretch-column" style="position: absolute; left: 0px; top: 0px; height: 700px; min-height: 700px; width: 960px; display: flex; flex-direction: column; align-items: center; justify-content: space-evenly" >
@@ -276,8 +281,12 @@ May, 2022 <!-- .element: style="font-family: 'Nanum Pen Script'; font-size: 1.6e
 </script></section><section  data-markdown><script type="text/template">
 ## Data Parallelism
 
-- Each worker computes the corresponding loss and gradients with respect to the local data it possesses. Before updating the parameters at each epoch, the loss and gradients are averaged among all the workers through a collective `allreduce` operation.
+- Each worker computes the corresponding loss and gradients with respect to the local data it possesses.
+
+- Before updating the parameters at each epoch, the loss and gradients are averaged among all the workers through a collective `allreduce` operation.
+
     - `MPI` defines the function `MPI_Allreduce` to reduce values from all ranks and broadcast the result of the reduction such that all processes have a copy of it at the end of the operation.
+    
 - There are multiple different ways to implement the allreduce, and it may vary from problem to problem<sup id="fnref:4" role="doc-noteref">1</sup>,<sup id="fnref:5" role="doc-noteref">2</sup>
 
 <div class="footnotes" role="doc-endnotes">
@@ -328,30 +337,48 @@ Keeping the communication to computation ratio small is important for effective 
 
 <div class="block">
 
-<!-- .element: style="font-size: 0.9em" -->
+<!-- .element: style="font-size: 0.9em; text-align: left" -->
 
 - Good practices for upcoming systems (e.g. [Aurora](https://alcf.anl.gov/aurora), [Polaris](https://alcf.anl.gov/polaris), etc.)<sup id="fnref:6" role="doc-noteref">1</sup>
+
 1. Use parallel IO whenever possible
-    1. Could feed each rank from different files
-    2. Use MPI IO to have each rank read its own batch from a file
-    3. Use several ranks to read data and MPI to scatter data to remaining ranks
-        1. This is most practical in big, at-scale trainings
-2. Take advantage of the data storage
+
+    - Could feed each rank from different files
+    
+    - Use MPI IO to have each rank read its own batch from a file
+    
+    - Use several ranks to read data and MPI to scatter data to remaining ranks
+    
+        - This is most practical in big, at-scale trainings
+        
+</div>
+
+
+
+<div class="footnotes" role="doc-endnotes">
+<ol>
+</ol>
+</div>
+</script></section><section  data-markdown><script type="text/template">## Best Practices
+
+1. **Use parallel IO whenever possible**
+
+2. **Take advantage of the data storage**
+
     1. Use [striping on Lustre](https://wiki.lustre.org/Configuring_Lustre_File_Striping)
+    
     2. Use the right optimizations for Aurora, Polaris, etc.
-3. Preload data when possible
+    
+3. **Preload data when possible**
+
     1. Offloading to a GPU frees CPU cycles for loading the next batch of data
+    
         1. You can minimize IO latency this way
 
 </div>
 
 
-        
-<div class="footnotes" role="doc-endnotes">
-<ol>
-</ol>
-</div>
-</script></section><section  data-markdown><script type="text/template">
+        </script></section><section  data-markdown><script type="text/template">
 ### Comparison
 
 - We can get a better understanding of the differences by looking at how both the data and model weights are distributed across the different workers as shown below.
