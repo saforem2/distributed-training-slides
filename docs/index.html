@@ -453,15 +453,15 @@ In order to use hydra with the provided `conda` environment, repeat the followin
 - To get an interactive job:
 
   ```bash
-  $ qsub -I -A Comp_Perf_Workshop -q single-gpu -t 01:00 -n 1
+  qsub -I -A Comp_Perf_Workshop -q single-gpu -t 01:00 -n 1
   ```
 
 - Load the base conda environment and install `hydra`:
 
   ```bash
-  $ module load conda/2021-11-30
-  $ conda activate base
-  $ python3 -m pip install hydra-core hydra_colorlog --upgrade
+  module load conda/2021-11-30
+  conda activate base
+  python3 -m pip install hydra-core hydra_colorlog --upgrade
   ```
 
 </script></section><section  data-markdown><script type="text/template">
